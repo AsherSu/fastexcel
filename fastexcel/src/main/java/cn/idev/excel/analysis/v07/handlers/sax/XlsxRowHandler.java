@@ -1,14 +1,6 @@
 package cn.idev.excel.analysis.v07.handlers.sax;
 
-import cn.idev.excel.analysis.v07.handlers.CellFormulaTagHandler;
-import cn.idev.excel.analysis.v07.handlers.CellInlineStringValueTagHandler;
-import cn.idev.excel.analysis.v07.handlers.CellTagHandler;
-import cn.idev.excel.analysis.v07.handlers.CellValueTagHandler;
-import cn.idev.excel.analysis.v07.handlers.CountTagHandler;
-import cn.idev.excel.analysis.v07.handlers.HyperlinkTagHandler;
-import cn.idev.excel.analysis.v07.handlers.MergeCellTagHandler;
-import cn.idev.excel.analysis.v07.handlers.RowTagHandler;
-import cn.idev.excel.analysis.v07.handlers.XlsxTagHandler;
+import cn.idev.excel.analysis.v07.handlers.*;
 import cn.idev.excel.constant.ExcelXmlConstants;
 import cn.idev.excel.context.xlsx.XlsxReadContext;
 import java.util.HashMap;
@@ -59,6 +51,33 @@ public class XlsxRowHandler extends DefaultHandler {
         XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.ROW_TAG, rowTagHandler);
         XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.X_ROW_TAG, rowTagHandler);
         XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.NS2_ROW_TAG, rowTagHandler);
+        ImageTagHandler imageTagHandler = new ImageTagHandler();
+        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.IMAGE_TAG, imageTagHandler);
+        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.X_IMAGE_TAG, imageTagHandler);
+        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.NS2_IMAGE_TAG, imageTagHandler);
+        
+        // 添加更多图片相关标签的支持
+        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.TWO_CELL_ANCHOR_TAG, imageTagHandler);
+        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.X_TWO_CELL_ANCHOR_TAG, imageTagHandler);
+        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.NS2_TWO_CELL_ANCHOR_TAG, imageTagHandler);
+        
+        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.ONE_CELL_ANCHOR_TAG, imageTagHandler);
+        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.X_ONE_CELL_ANCHOR_TAG, imageTagHandler);
+        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.NS2_ONE_CELL_ANCHOR_TAG, imageTagHandler);
+        
+        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.BLIP_TAG, imageTagHandler);
+        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.X_BLIP_TAG, imageTagHandler);
+        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.NS2_BLIP_TAG, imageTagHandler);
+        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.A_BLIP_TAG, imageTagHandler);
+        
+        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.FROM_TAG, imageTagHandler);
+        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.X_FROM_TAG, imageTagHandler);
+        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.NS2_FROM_TAG, imageTagHandler);
+        
+        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.TO_TAG, imageTagHandler);
+        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.X_TO_TAG, imageTagHandler);
+        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.NS2_TO_TAG, imageTagHandler);
+
     }
 
     public XlsxRowHandler(XlsxReadContext xlsxReadContext) {

@@ -17,5 +17,10 @@ public enum CellExtraTypeEnum {
     /**
      * Merge
      */
-    MERGE
+    MERGE,
+
+    /**
+     * Image todo
+     */
+    PICTURE
 }

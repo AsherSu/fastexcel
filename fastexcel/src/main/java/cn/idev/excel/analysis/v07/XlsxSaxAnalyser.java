@@ -3,6 +3,7 @@ package cn.idev.excel.analysis.v07;
 import cn.idev.excel.analysis.ExcelReadExecutor;
 import cn.idev.excel.analysis.v07.handlers.sax.SharedStringsTableHandler;
 import cn.idev.excel.analysis.v07.handlers.sax.XlsxRowHandler;
+import cn.idev.excel.util.AdvancedImageUtil;
 import cn.idev.excel.cache.ReadCache;
 import cn.idev.excel.context.xlsx.XlsxReadContext;
 import cn.idev.excel.enums.CellExtraTypeEnum;
@@ -30,12 +31,7 @@ import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
-import org.apache.poi.openxml4j.opc.OPCPackage;
-import org.apache.poi.openxml4j.opc.PackageAccess;
-import org.apache.poi.openxml4j.opc.PackagePart;
-import org.apache.poi.openxml4j.opc.PackagePartName;
-import org.apache.poi.openxml4j.opc.PackageRelationshipCollection;
-import org.apache.poi.openxml4j.opc.PackagingURIHelper;
+import org.apache.poi.openxml4j.opc.*;
 import org.apache.poi.ss.util.CellAddress;
 import org.apache.poi.xssf.eventusermodel.XSSFReader;
 import org.apache.poi.xssf.model.Comments;
@@ -109,6 +105,8 @@ public class XlsxSaxAnalyser implements ExcelReadExecutor {
         ctSheetMap = new HashMap<>();
         Map<Integer, PackageRelationshipCollection> packageRelationshipCollectionMap = MapUtils.newHashMap();
         xlsxReadWorkbookHolder.setPackageRelationshipCollectionMap(packageRelationshipCollectionMap);
+        Map<Integer, PackagePart> packagePartMap = MapUtils.newHashMap();
+        xlsxReadWorkbookHolder.setPackagePartMap(packagePartMap);
         // analysis CTSheet
         analysisCtSheetMap(xssfReader, xlsxReadWorkbookHolder);
 
@@ -148,6 +146,25 @@ public class XlsxSaxAnalyser implements ExcelReadExecutor {
                         .orElse(null);
                 if (packageRelationshipCollection != null) {
                     packageRelationshipCollectionMap.put(index, packageRelationshipCollection);
+                }
+            }
+            if (xlsxReadContext.readWorkbookHolder().getExtraReadSet().contains(CellExtraTypeEnum.PICTURE)) {
+                PackageRelationshipCollection packageRelationshipCollection = Optional.ofNullable(ite.getSheetPart())
+                        .map(packagePart -> {
+                            try {
+                                return packagePart.getRelationships();
+                            } catch (InvalidFormatException e) {
+                                log.warn("Reading the Relationship failed", e);
+                                return null;
+                            }
+                        })
+                        .orElse(null);
+                PackagePart packagePart = ite.getSheetPart();
+                if (packageRelationshipCollection != null) {
+                    packageRelationshipCollectionMap.put(index, packageRelationshipCollection);
+                }
+                if (packagePart != null) {
+                    packagePartMap.put(index, packagePart);
                 }
             }
             index++;
@@ -288,6 +305,10 @@ public class XlsxSaxAnalyser implements ExcelReadExecutor {
                     parseXmlSource(sheetMap.get(readSheet.getSheetNo()), new XlsxRowHandler(xlsxReadContext));
                     // Read comments
                     readComments(readSheet);
+                    // Process advanced images (CellImages and DISPIMG)
+                    if (xlsxReadContext.readWorkbookHolder().getExtraReadSet().contains(CellExtraTypeEnum.PICTURE)) {
+                        processAdvancedImages(readSheet);
+                    }
                 } catch (ExcelAnalysisStopSheetException e) {
                     if (log.isDebugEnabled()) {
                         log.debug("Custom stop!", e);
@@ -318,6 +339,20 @@ public class XlsxSaxAnalyser implements ExcelReadExecutor {
                     cellAddress.getColumn());
             xlsxReadContext.readSheetHolder().setCellExtra(cellExtra);
             xlsxReadContext.analysisEventProcessor().extra(xlsxReadContext);
+        }
+    }
+
+    /**
+     * 处理高级图片类型（CellImages和DISPIMG公式图片）
+     * Process advanced image types (CellImages and DISPIMG formula pictures)
+     */
+    private void processAdvancedImages(ReadSheet readSheet) {
+        try {
+            log.debug("开始处理Sheet[{}]的高级图片", readSheet.getSheetName());
+            AdvancedImageUtil.processAdvancedImages(xlsxReadContext);
+        } catch (Exception e) {
+            log.warn("处理Sheet[{}]的高级图片时发生错误: {}", readSheet.getSheetName(), e.getMessage());
+            // 不中断正常的读取流程，只记录警告
         }
     }
 }

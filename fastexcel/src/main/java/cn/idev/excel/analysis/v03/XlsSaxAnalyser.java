@@ -1,26 +1,7 @@
 package cn.idev.excel.analysis.v03;
 
 import cn.idev.excel.analysis.ExcelReadExecutor;
-import cn.idev.excel.analysis.v03.handlers.BlankRecordHandler;
-import cn.idev.excel.analysis.v03.handlers.BofRecordHandler;
-import cn.idev.excel.analysis.v03.handlers.BoolErrRecordHandler;
-import cn.idev.excel.analysis.v03.handlers.BoundSheetRecordHandler;
-import cn.idev.excel.analysis.v03.handlers.DateWindow1904RecordHandler;
-import cn.idev.excel.analysis.v03.handlers.DummyRecordHandler;
-import cn.idev.excel.analysis.v03.handlers.EofRecordHandler;
-import cn.idev.excel.analysis.v03.handlers.FormulaRecordHandler;
-import cn.idev.excel.analysis.v03.handlers.HyperlinkRecordHandler;
-import cn.idev.excel.analysis.v03.handlers.IndexRecordHandler;
-import cn.idev.excel.analysis.v03.handlers.LabelRecordHandler;
-import cn.idev.excel.analysis.v03.handlers.LabelSstRecordHandler;
-import cn.idev.excel.analysis.v03.handlers.MergeCellsRecordHandler;
-import cn.idev.excel.analysis.v03.handlers.NoteRecordHandler;
-import cn.idev.excel.analysis.v03.handlers.NumberRecordHandler;
-import cn.idev.excel.analysis.v03.handlers.ObjRecordHandler;
-import cn.idev.excel.analysis.v03.handlers.RkRecordHandler;
-import cn.idev.excel.analysis.v03.handlers.SstRecordHandler;
-import cn.idev.excel.analysis.v03.handlers.StringRecordHandler;
-import cn.idev.excel.analysis.v03.handlers.TextObjectRecordHandler;
+import cn.idev.excel.analysis.v03.handlers.*;
 import cn.idev.excel.context.xls.XlsReadContext;
 import cn.idev.excel.exception.ExcelAnalysisException;
 import cn.idev.excel.exception.ExcelAnalysisStopException;
@@ -39,26 +20,7 @@ import org.apache.poi.hssf.eventusermodel.HSSFEventFactory;
 import org.apache.poi.hssf.eventusermodel.HSSFListener;
 import org.apache.poi.hssf.eventusermodel.HSSFRequest;
 import org.apache.poi.hssf.eventusermodel.MissingRecordAwareHSSFListener;
-import org.apache.poi.hssf.record.BOFRecord;
-import org.apache.poi.hssf.record.BlankRecord;
-import org.apache.poi.hssf.record.BoolErrRecord;
-import org.apache.poi.hssf.record.BoundSheetRecord;
-import org.apache.poi.hssf.record.DateWindow1904Record;
-import org.apache.poi.hssf.record.EOFRecord;
-import org.apache.poi.hssf.record.FormulaRecord;
-import org.apache.poi.hssf.record.HyperlinkRecord;
-import org.apache.poi.hssf.record.IndexRecord;
-import org.apache.poi.hssf.record.LabelRecord;
-import org.apache.poi.hssf.record.LabelSSTRecord;
-import org.apache.poi.hssf.record.MergeCellsRecord;
-import org.apache.poi.hssf.record.NoteRecord;
-import org.apache.poi.hssf.record.NumberRecord;
-import org.apache.poi.hssf.record.ObjRecord;
-import org.apache.poi.hssf.record.RKRecord;
-import org.apache.poi.hssf.record.Record;
-import org.apache.poi.hssf.record.SSTRecord;
-import org.apache.poi.hssf.record.StringRecord;
-import org.apache.poi.hssf.record.TextObjectRecord;
+import org.apache.poi.hssf.record.*;
 
 /**
  * A text extractor for Excel files.
@@ -102,6 +64,7 @@ public class XlsSaxAnalyser implements HSSFListener, ExcelReadExecutor {
         XLS_RECORD_HANDLER_MAP.put(StringRecord.sid, new StringRecordHandler());
         XLS_RECORD_HANDLER_MAP.put(TextObjectRecord.sid, new TextObjectRecordHandler());
         XLS_RECORD_HANDLER_MAP.put(DateWindow1904Record.sid, new DateWindow1904RecordHandler());
+        XLS_RECORD_HANDLER_MAP.put(DrawingRecord.sid, new ImageRecordHandler());
     }
 
     /**

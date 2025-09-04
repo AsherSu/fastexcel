@@ -34,6 +34,14 @@ public class CellExtra extends AbstractCell {
      * Last column index, if this object is an interval
      */
     private Integer lastColumnIndex;
+    /**
+     * Picture data (byte array), only for PICTURE type
+     */
+    private byte[] imageData;
+    /**
+     * Picture format (e.g., "PNG", "JPG", "GIF"), only for PICTURE type
+     */
+    private String imageFormat;
 
     public CellExtra(CellExtraTypeEnum type, String text, String range) {
         super();
@@ -73,6 +81,16 @@ public class CellExtra extends AbstractCell {
         this.firstColumnIndex = firstColumnIndex;
         this.lastRowIndex = lastRowIndex;
         this.lastColumnIndex = lastColumnIndex;
+    }
+
+    /**
+     * Constructor for picture type CellExtra
+     */
+    public CellExtra(CellExtraTypeEnum type, byte[] pictureData, String imageFormat,
+                     Integer rowIndex, Integer columnIndex) {
+        this(type, null, rowIndex, rowIndex, columnIndex, columnIndex);
+        this.imageData = pictureData;
+        this.imageFormat = imageFormat;
     }
 
     public CellExtraTypeEnum getType() {
@@ -121,5 +139,21 @@ public class CellExtra extends AbstractCell {
 
     public void setLastColumnIndex(Integer lastColumnIndex) {
         this.lastColumnIndex = lastColumnIndex;
+    }
+
+    public byte[] getImageData() {
+        return imageData;
+    }
+
+    public void setImageData(byte[] imageData) {
+        this.imageData = imageData;
+    }
+
+    public String getImageFormat() {
+        return imageFormat;
+    }
+
+    public void setImageFormat(String imageFormat) {
+        this.imageFormat = imageFormat;
     }
 }

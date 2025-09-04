@@ -3,17 +3,22 @@ package cn.idev.excel.read.metadata.holder.xlsx;
 import cn.idev.excel.read.metadata.ReadSheet;
 import cn.idev.excel.read.metadata.holder.ReadSheetHolder;
 import cn.idev.excel.read.metadata.holder.ReadWorkbookHolder;
+
+import java.net.URI;
 import java.util.Deque;
 import java.util.LinkedList;
+
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
+import org.apache.poi.openxml4j.opc.PackagePart;
+import org.apache.poi.openxml4j.opc.PackagePartName;
 import org.apache.poi.openxml4j.opc.PackageRelationshipCollection;
+import org.apache.poi.openxml4j.opc.PackagingURIHelper;
 
 /**
  * sheet holder
- *
- *
  */
 @Getter
 @Setter
@@ -40,11 +45,19 @@ public class XlsxReadSheetHolder extends ReadSheetHolder {
      */
     private PackageRelationshipCollection packageRelationshipCollection;
 
+    /**
+     * Current sheet's package part
+     */
+    private PackagePart packagePart;
+
     public XlsxReadSheetHolder(ReadSheet readSheet, ReadWorkbookHolder readWorkbookHolder) {
         super(readSheet, readWorkbookHolder);
-        this.tagDeque = new LinkedList<String>();
+        this.tagDeque = new LinkedList<>();
         packageRelationshipCollection = ((XlsxReadWorkbookHolder) readWorkbookHolder)
                 .getPackageRelationshipCollectionMap()
+                .get(readSheet.getSheetNo());
+        packagePart = ((XlsxReadWorkbookHolder) readWorkbookHolder)
+                .getPackagePartMap()
                 .get(readSheet.getSheetNo());
     }
 }
