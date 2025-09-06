@@ -1,7 +1,9 @@
 package cn.idev.excel.converters.bytearray;
 
 import cn.idev.excel.converters.Converter;
+import cn.idev.excel.enums.CellDataTypeEnum;
 import cn.idev.excel.metadata.GlobalConfiguration;
+import cn.idev.excel.metadata.data.ReadCellData;
 import cn.idev.excel.metadata.data.WriteCellData;
 import cn.idev.excel.metadata.property.ExcelContentProperty;
 
@@ -18,8 +20,22 @@ public class ByteArrayImageConverter implements Converter<byte[]> {
     }
 
     @Override
+    public CellDataTypeEnum supportExcelTypeKey() {
+        return CellDataTypeEnum.BYTE_ARRAY;
+    }
+
+    @Override
     public WriteCellData<?> convertToExcelData(
             byte[] value, ExcelContentProperty contentProperty, GlobalConfiguration globalConfiguration) {
         return new WriteCellData<>(value);
+    }
+
+    @Override
+    public byte[] convertToJavaData(
+            ReadCellData<?> cellData, ExcelContentProperty contentProperty, GlobalConfiguration globalConfiguration) {
+        if (CellDataTypeEnum.STRING.equals(cellData.getType())) {
+            return (byte[]) cellData.getData();
+        }
+        return null;
     }
 }

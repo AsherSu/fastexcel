@@ -51,32 +51,32 @@ public class XlsxRowHandler extends DefaultHandler {
         XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.ROW_TAG, rowTagHandler);
         XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.X_ROW_TAG, rowTagHandler);
         XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.NS2_ROW_TAG, rowTagHandler);
-        ImageTagHandler imageTagHandler = new ImageTagHandler();
-        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.IMAGE_TAG, imageTagHandler);
-        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.X_IMAGE_TAG, imageTagHandler);
-        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.NS2_IMAGE_TAG, imageTagHandler);
-        
+        FloatingImageTagHandler floatingImageTagHandler = new FloatingImageTagHandler();
+        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.IMAGE_TAG, floatingImageTagHandler);
+        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.X_IMAGE_TAG, floatingImageTagHandler);
+        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.NS2_IMAGE_TAG, floatingImageTagHandler);
+
         // 添加更多图片相关标签的支持
-        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.TWO_CELL_ANCHOR_TAG, imageTagHandler);
-        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.X_TWO_CELL_ANCHOR_TAG, imageTagHandler);
-        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.NS2_TWO_CELL_ANCHOR_TAG, imageTagHandler);
-        
-        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.ONE_CELL_ANCHOR_TAG, imageTagHandler);
-        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.X_ONE_CELL_ANCHOR_TAG, imageTagHandler);
-        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.NS2_ONE_CELL_ANCHOR_TAG, imageTagHandler);
-        
-        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.BLIP_TAG, imageTagHandler);
-        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.X_BLIP_TAG, imageTagHandler);
-        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.NS2_BLIP_TAG, imageTagHandler);
-        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.A_BLIP_TAG, imageTagHandler);
-        
-        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.FROM_TAG, imageTagHandler);
-        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.X_FROM_TAG, imageTagHandler);
-        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.NS2_FROM_TAG, imageTagHandler);
-        
-        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.TO_TAG, imageTagHandler);
-        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.X_TO_TAG, imageTagHandler);
-        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.NS2_TO_TAG, imageTagHandler);
+        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.TWO_CELL_ANCHOR_TAG, floatingImageTagHandler);
+        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.X_TWO_CELL_ANCHOR_TAG, floatingImageTagHandler);
+        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.NS2_TWO_CELL_ANCHOR_TAG, floatingImageTagHandler);
+
+        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.ONE_CELL_ANCHOR_TAG, floatingImageTagHandler);
+        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.X_ONE_CELL_ANCHOR_TAG, floatingImageTagHandler);
+        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.NS2_ONE_CELL_ANCHOR_TAG, floatingImageTagHandler);
+
+        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.BLIP_TAG, floatingImageTagHandler);
+        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.X_BLIP_TAG, floatingImageTagHandler);
+        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.NS2_BLIP_TAG, floatingImageTagHandler);
+        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.A_BLIP_TAG, floatingImageTagHandler);
+
+        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.FROM_TAG, floatingImageTagHandler);
+        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.X_FROM_TAG, floatingImageTagHandler);
+        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.NS2_FROM_TAG, floatingImageTagHandler);
+
+        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.TO_TAG, floatingImageTagHandler);
+        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.X_TO_TAG, floatingImageTagHandler);
+        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.NS2_TO_TAG, floatingImageTagHandler);
 
     }
 

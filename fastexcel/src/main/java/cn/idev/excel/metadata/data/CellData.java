@@ -35,6 +35,10 @@ public class CellData<T> extends AbstractCell {
      * {@link CellDataTypeEnum#BOOLEAN}
      */
     private Boolean booleanValue;
+    /**
+     * {@link CellDataTypeEnum#BOOLEAN}
+     */
+    private byte[] byteArrayValue;
 
     /**
      * The resulting converted data.

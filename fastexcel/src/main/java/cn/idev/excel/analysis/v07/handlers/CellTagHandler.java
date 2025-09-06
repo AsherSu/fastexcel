@@ -10,6 +10,8 @@ import cn.idev.excel.util.BooleanUtils;
 import cn.idev.excel.util.PositionUtils;
 import cn.idev.excel.util.StringUtils;
 import java.math.BigDecimal;
+import java.util.regex.Pattern;
+
 import org.xml.sax.Attributes;
 
 /**
@@ -67,6 +69,12 @@ public class CellTagHandler extends AbstractXlsxTagHandler {
                 String stringValue =
                         xlsxReadContext.readWorkbookHolder().getReadCache().get(Integer.valueOf(tempDataString));
                 tempCellData.setStringValue(stringValue);
+                Pattern DISPIMG_PATTERN = Pattern.compile(
+                        "^(?:@)?(?:_xlfn\\.)?DISPIMG\\(\\s*\"([^\"]+)\"(?:\\s*,\\s*\\d+\\s*)?\\)\\s*$",
+                        Pattern.CASE_INSENSITIVE);
+                if (DISPIMG_PATTERN.matcher(stringValue).matches()) {//todo 如果是wps特有的图片格式执行这个
+
+                }
                 break;
             case DIRECT_STRING:
             case ERROR:
@@ -91,6 +99,15 @@ public class CellTagHandler extends AbstractXlsxTagHandler {
                 tempCellData.setNumberValue(
                         tempCellData.getOriginalNumberValue().round(EasyExcelConstants.EXCEL_MATH_CONTEXT));
                 break;
+            case BYTE_ARRAY:
+                if (StringUtils.isEmpty(tempDataString)) {
+                    tempCellData.setType(CellDataTypeEnum.EMPTY);
+                    break;
+                }
+                tempCellData.setType(CellDataTypeEnum.BYTE_ARRAY);
+                tempCellData.setByteArrayValue(convertToByteArray(tempDataString));
+                break;
+
             default:
                 throw new IllegalStateException("Cannot set values now");
         }

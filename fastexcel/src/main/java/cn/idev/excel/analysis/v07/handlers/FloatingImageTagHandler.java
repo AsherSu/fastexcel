@@ -8,9 +8,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.openxml4j.opc.*;
 import org.xml.sax.Attributes;
 
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLStreamConstants;
-import javax.xml.stream.XMLStreamReader;
 import java.io.InputStream;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -24,7 +21,7 @@ import java.util.regex.Pattern;
  * 基于您提供的Excel图片解析方案进行优化和整合
  */
 @Slf4j
-public class ImageTagHandler extends AbstractXlsxTagHandler {
+public class FloatingImageTagHandler extends AbstractXlsxTagHandler {
 
     // 解析DISPIMG公式的正则表达式 - 兼容WPS格式
     private static final Pattern DISPIMG_PATTERN = Pattern.compile(
@@ -50,7 +47,7 @@ public class ImageTagHandler extends AbstractXlsxTagHandler {
 
     @Override
     public boolean support(XlsxReadContext xlsxReadContext) {
-        return xlsxReadContext.readWorkbookHolder().getExtraReadSet().contains(CellExtraTypeEnum.PICTURE);
+        return xlsxReadContext.readWorkbookHolder().getExtraReadSet().contains(CellExtraTypeEnum.MERGE_IMAGE);
     }
 
     @Override
@@ -201,7 +198,7 @@ public class ImageTagHandler extends AbstractXlsxTagHandler {
             int finalColumnIndex = columnIndex != null ? columnIndex : 0;
 
             CellExtra cellExtra = new CellExtra(
-                    CellExtraTypeEnum.PICTURE,
+                    CellExtraTypeEnum.MERGE_IMAGE,
                     pictureData,
                     pictureFormat,
                     finalRowIndex,

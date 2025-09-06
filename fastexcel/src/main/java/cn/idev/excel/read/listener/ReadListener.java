@@ -54,7 +54,7 @@ public interface ReadListener<T> extends Listener {
      *
      * @param context
      */
-    void doAfterAllAnalysed(AnalysisContext context);
+    default void doAfterAllAnalysed(AnalysisContext context){}
 
     /**
      * Verify that there is another piece of data.You can stop the read by returning false

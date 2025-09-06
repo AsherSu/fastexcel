@@ -287,7 +287,7 @@ public class AdvancedImageUtil {
                     imgPart.getPartName().getName());
 
             CellExtra cellExtra = new CellExtra(
-                    CellExtraTypeEnum.PICTURE,
+                    CellExtraTypeEnum.MERGE_IMAGE,
                     pictureData,
                     pictureFormat,
                     row,

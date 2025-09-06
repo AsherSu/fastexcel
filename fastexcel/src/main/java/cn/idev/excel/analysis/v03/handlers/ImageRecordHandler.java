@@ -16,7 +16,7 @@ public class ImageRecordHandler extends AbstractXlsRecordHandler implements Igno
 
     @Override
     public boolean support(XlsReadContext xlsReadContext, Record record) {
-        return xlsReadContext.readWorkbookHolder().getExtraReadSet().contains(CellExtraTypeEnum.PICTURE)
+        return xlsReadContext.readWorkbookHolder().getExtraReadSet().contains(CellExtraTypeEnum.MERGE_IMAGE)
                 && record instanceof ObjRecord;
     }
 
@@ -45,7 +45,7 @@ public class ImageRecordHandler extends AbstractXlsRecordHandler implements Igno
 
                 if (rowIndex != null && columnIndex != null) {
                     CellExtra cellExtra = new CellExtra(
-                            CellExtraTypeEnum.PICTURE,
+                            CellExtraTypeEnum.MERGE_IMAGE,
                             pictureData,
                             pictureFormat,
                             rowIndex,
@@ -72,7 +72,6 @@ public class ImageRecordHandler extends AbstractXlsRecordHandler implements Igno
         // 1. Parse OBJ record to find picture references
         // 2. Look up corresponding IMDATA records
         // 3. Extract and decompress picture data
-
         return null;
     }
 

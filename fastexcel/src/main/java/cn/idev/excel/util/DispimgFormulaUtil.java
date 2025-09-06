@@ -46,7 +46,7 @@ public class DispimgFormulaUtil {
      */
     public static boolean processDispimgFormula(XlsxReadContext xlsxReadContext, String formula,
                                                Integer rowIndex, Integer columnIndex) {
-        if (!xlsxReadContext.readWorkbookHolder().getExtraReadSet().contains(CellExtraTypeEnum.PICTURE)) {
+        if (!xlsxReadContext.readWorkbookHolder().getExtraReadSet().contains(CellExtraTypeEnum.MERGE_IMAGE)) {
             return false;
         }
 
@@ -208,7 +208,7 @@ public class DispimgFormulaUtil {
             int finalColumnIndex = columnIndex != null ? columnIndex : 0;
 
             CellExtra cellExtra = new CellExtra(
-                    CellExtraTypeEnum.PICTURE,
+                    CellExtraTypeEnum.MERGE_IMAGE,
                     pictureData,
                     pictureFormat,
                     finalRowIndex,

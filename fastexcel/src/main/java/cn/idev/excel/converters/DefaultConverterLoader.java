@@ -114,6 +114,8 @@ public class DefaultConverterLoader {
         putAllConverter(new StringNumberConverter());
         putAllConverter(new StringStringConverter());
         putAllConverter(new StringErrorConverter());
+
+        putAllConverter(new ByteArrayImageConverter());
     }
 
     private static void initDefaultWriteConverter() {

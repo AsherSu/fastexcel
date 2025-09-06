@@ -148,7 +148,7 @@ public class XlsxSaxAnalyser implements ExcelReadExecutor {
                     packageRelationshipCollectionMap.put(index, packageRelationshipCollection);
                 }
             }
-            if (xlsxReadContext.readWorkbookHolder().getExtraReadSet().contains(CellExtraTypeEnum.PICTURE)) {
+            if (xlsxReadContext.readWorkbookHolder().getExtraReadSet().contains(CellExtraTypeEnum.MERGE_IMAGE)) {
                 PackageRelationshipCollection packageRelationshipCollection = Optional.ofNullable(ite.getSheetPart())
                         .map(packagePart -> {
                             try {
@@ -306,7 +306,7 @@ public class XlsxSaxAnalyser implements ExcelReadExecutor {
                     // Read comments
                     readComments(readSheet);
                     // Process advanced images (CellImages and DISPIMG)
-                    if (xlsxReadContext.readWorkbookHolder().getExtraReadSet().contains(CellExtraTypeEnum.PICTURE)) {
+                    if (xlsxReadContext.readWorkbookHolder().getExtraReadSet().contains(CellExtraTypeEnum.MERGE_IMAGE)) {
                         processAdvancedImages(readSheet);
                     }
                 } catch (ExcelAnalysisStopSheetException e) {
