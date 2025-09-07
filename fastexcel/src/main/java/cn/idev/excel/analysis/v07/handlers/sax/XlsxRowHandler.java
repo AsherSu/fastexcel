@@ -56,9 +56,13 @@ public class XlsxRowHandler extends DefaultHandler {
         XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.X_IMAGE_TAG, floatingImageTagHandler);
         XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.NS2_IMAGE_TAG, floatingImageTagHandler);
 
-        // 添加内嵌图片处理器
+        // 处理标准 OOXML DrawingML 图片：<drawing r:id="..."> 引用的 drawing#.xml
         EmbeddedImageTagHandler embeddedImageTagHandler = new EmbeddedImageTagHandler();
-        // 添加对内嵌图片标签的支持
+        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.DRAWING_TAG, embeddedImageTagHandler);
+        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.X_DRAWING_TAG, embeddedImageTagHandler);
+        XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.NS2_DRAWING_TAG, embeddedImageTagHandler);
+
+        // 历史兼容：自定义内嵌图片标签（如 WPS 扩展）
         XLSX_CELL_HANDLER_MAP.put("cellImage", embeddedImageTagHandler);
         XLSX_CELL_HANDLER_MAP.put("x:cellImage", embeddedImageTagHandler);
         XLSX_CELL_HANDLER_MAP.put("ns2:cellImage", embeddedImageTagHandler);
