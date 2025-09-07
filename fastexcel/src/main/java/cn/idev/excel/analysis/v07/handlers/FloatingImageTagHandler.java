@@ -10,23 +10,18 @@ import org.xml.sax.Attributes;
 
 import java.io.InputStream;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
- * 综合图片处理器 - 支持浮动图片、内嵌图片和DISPIMG公式图片
- * Comprehensive Picture Handler for XLSX format
- * Supports floating pictures, embedded pictures (cellImage), and DISPIMG formula pictures
+ * 浮动图片处理器 - 专门处理Excel中的浮动图片
+ * Floating Picture Handler for XLSX format
+ * Handles floating pictures in Excel drawings (twoCellAnchor/oneCellAnchor)
  *
- * 基于您提供的Excel图片解析方案进行优化和整合
+ * 处理存储在xl/drawings/drawing*.xml中的传统浮动图片
  */
 @Slf4j
 public class FloatingImageTagHandler extends AbstractXlsxTagHandler {
 
-    // 解析DISPIMG公式的正则表达式 - 兼容WPS格式
-    private static final Pattern DISPIMG_PATTERN = Pattern.compile(
-            "^(?:@)?(?:_xlfn\\.)?DISPIMG\\(\\s*\"([^\"]+)\"(?:\\s*,\\s*\\d+\\s*)?\\)\\s*$",
-            Pattern.CASE_INSENSITIVE);
+
 
     // 当前解析状态 - 用于SAX解析状态管理
     private static class ParseState {
@@ -92,8 +87,10 @@ public class FloatingImageTagHandler extends AbstractXlsxTagHandler {
                     }
                     break;
                 default:
-                    // 处理其他可能的图片相关标签
-                    handleOtherPictureElements(xlsxReadContext, name, attributes);
+                    // 仅处理浮动图片相关标签，其他标签忽略
+                    if (log.isDebugEnabled()) {
+                        log.debug("忽略非浮动图片元素: name={}", name);
+                    }
                     break;
             }
         } catch (Exception e) {
@@ -226,28 +223,9 @@ public class FloatingImageTagHandler extends AbstractXlsxTagHandler {
         return buffer.toByteArray();
     }
 
-    /**
-     * 处理其他可能的图片相关元素
-     */
-    private void handleOtherPictureElements(XlsxReadContext xlsxReadContext, String name, Attributes attributes) {
-        // 预留给其他图片处理逻辑，如cellImage等
-        // 这里可以根据需要扩展处理cellImages.xml中的内嵌图片
-        if (log.isDebugEnabled()) {
-            log.debug("处理其他图片元素: name={}", name);
-        }
-    }
 
-    /**
-     * 解析DISPIMG公式中的图片ID
-     */
-    public static String parseDispimgId(String formula) {
-        if (StringUtils.isEmpty(formula)) {
-            return null;
-        }
 
-        Matcher matcher = DISPIMG_PATTERN.matcher(formula.trim());
-        return matcher.matches() ? matcher.group(1) : null;
-    }
+
 
     /**
      * 判断图片格式

@@ -13,7 +13,7 @@ import java.util.List;
 
 public class FastExcelDemo {
     public static void main(String[] args) {
-        String fileName = "E:\\project\\java\\swagger-demo\\1.xlsx";
+        String fileName = "D:\\projects\\java\\fastexcel\\imageExample.xlsx";
 
 
 //        // 方式1：简单写入
@@ -28,6 +28,16 @@ public class FastExcelDemo {
 //        excelWriter.finish();
         FastExcel.read(fileName, DemoData.class, (ReadListener<DemoData>) (data, context) -> {
                     System.out.println(data);
+                    if (data.getPic() != null) {
+                        // 模拟文件下载操作，例如保存到本地
+                        String imagePath = "D:\\projects\\java\\fastexcel\\downloaded_image_" + System.currentTimeMillis() + ".jpg";
+                        try {
+                            java.nio.file.Files.write(java.nio.file.Paths.get(imagePath), data.getPic());
+                            System.out.println("图片已保存到: " + imagePath);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
                 })
                 .extraRead(CellExtraTypeEnum.MERGE_IMAGE)
                 .doReadAll();

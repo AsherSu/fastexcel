@@ -56,6 +56,16 @@ public class XlsxRowHandler extends DefaultHandler {
         XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.X_IMAGE_TAG, floatingImageTagHandler);
         XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.NS2_IMAGE_TAG, floatingImageTagHandler);
 
+        // 添加内嵌图片处理器
+        EmbeddedImageTagHandler embeddedImageTagHandler = new EmbeddedImageTagHandler();
+        // 添加对内嵌图片标签的支持
+        XLSX_CELL_HANDLER_MAP.put("cellImage", embeddedImageTagHandler);
+        XLSX_CELL_HANDLER_MAP.put("x:cellImage", embeddedImageTagHandler);
+        XLSX_CELL_HANDLER_MAP.put("ns2:cellImage", embeddedImageTagHandler);
+        XLSX_CELL_HANDLER_MAP.put("imagedata", embeddedImageTagHandler);
+        XLSX_CELL_HANDLER_MAP.put("x:imagedata", embeddedImageTagHandler);
+        XLSX_CELL_HANDLER_MAP.put("ns2:imagedata", embeddedImageTagHandler);
+
         // 添加更多图片相关标签的支持
         XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.TWO_CELL_ANCHOR_TAG, floatingImageTagHandler);
         XLSX_CELL_HANDLER_MAP.put(ExcelXmlConstants.X_TWO_CELL_ANCHOR_TAG, floatingImageTagHandler);

@@ -21,6 +21,7 @@ import org.apache.poi.hssf.eventusermodel.HSSFListener;
 import org.apache.poi.hssf.eventusermodel.HSSFRequest;
 import org.apache.poi.hssf.eventusermodel.MissingRecordAwareHSSFListener;
 import org.apache.poi.hssf.record.*;
+import org.apache.poi.hssf.record.Record;
 
 /**
  * A text extractor for Excel files.

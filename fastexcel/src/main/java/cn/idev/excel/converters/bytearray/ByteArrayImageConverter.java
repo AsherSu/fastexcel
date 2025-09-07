@@ -21,7 +21,7 @@ public class ByteArrayImageConverter implements Converter<byte[]> {
 
     @Override
     public CellDataTypeEnum supportExcelTypeKey() {
-        return CellDataTypeEnum.BYTE_ARRAY;
+        return CellDataTypeEnum.STRING;
     }
 
     @Override
@@ -34,7 +34,7 @@ public class ByteArrayImageConverter implements Converter<byte[]> {
     public byte[] convertToJavaData(
             ReadCellData<?> cellData, ExcelContentProperty contentProperty, GlobalConfiguration globalConfiguration) {
         if (CellDataTypeEnum.STRING.equals(cellData.getType())) {
-            return (byte[]) cellData.getData();
+            return cellData.getByteArrayValue();
         }
         return null;
     }
