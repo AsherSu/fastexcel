@@ -1,5 +1,6 @@
 package cn.idev.excel.read.metadata.holder.xlsx;
 
+import cn.idev.excel.analysis.v07.XlsxSaxAnalyser;
 import cn.idev.excel.read.metadata.ReadSheet;
 import cn.idev.excel.read.metadata.holder.ReadSheetHolder;
 import cn.idev.excel.read.metadata.holder.ReadWorkbookHolder;
@@ -7,6 +8,8 @@ import cn.idev.excel.read.metadata.holder.ReadWorkbookHolder;
 import java.net.URI;
 import java.util.Deque;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -49,6 +52,14 @@ public class XlsxReadSheetHolder extends ReadSheetHolder {
      * Current sheet's package part
      */
     private PackagePart packagePart;
+
+    private List<XlsxSaxAnalyser.EmbeddedImage> images;
+
+    /**
+     * 图片数据映射：行号 -> 列号 -> 图片对象
+     * 用于在SAX解析过程中快速查找特定位置的图片
+     */
+    private Map<Integer, Map<Integer, XlsxSaxAnalyser.EmbeddedImage>> imageMap;
 
     public XlsxReadSheetHolder(ReadSheet readSheet, ReadWorkbookHolder readWorkbookHolder) {
         super(readSheet, readWorkbookHolder);

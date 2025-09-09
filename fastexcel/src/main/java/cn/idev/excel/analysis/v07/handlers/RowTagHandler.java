@@ -1,5 +1,6 @@
 package cn.idev.excel.analysis.v07.handlers;
 
+import cn.idev.excel.analysis.v07.XlsxSaxAnalyser;
 import cn.idev.excel.constant.ExcelXmlConstants;
 import cn.idev.excel.context.xlsx.XlsxReadContext;
 import cn.idev.excel.enums.CellDataTypeEnum;
@@ -10,6 +11,8 @@ import cn.idev.excel.read.metadata.holder.ReadRowHolder;
 import cn.idev.excel.read.metadata.holder.xlsx.XlsxReadSheetHolder;
 import cn.idev.excel.util.PositionUtils;
 import java.util.LinkedHashMap;
+import java.util.Map;
+
 import org.apache.commons.collections4.MapUtils;
 import org.xml.sax.Attributes;
 
@@ -61,6 +64,17 @@ public class RowTagHandler extends AbstractXlsxTagHandler {
                 rowType = RowTypeEnum.EMPTY;
             }
         }
+        xlsxReadSheetHolder.getCellMap().values()
+                        .stream().map(c -> {
+                    if (c == null) {
+                        Map<Integer, Map<Integer, XlsxSaxAnalyser.EmbeddedImage>> imageMap = xlsxReadSheetHolder.getImageMap();
+                        XlsxSaxAnalyser.EmbeddedImage embeddedImage = imageMap.get(xlsxReadSheetHolder.getRowIndex()).get(xlsxReadSheetHolder.getColumnIndex());
+                        System.out.println(embeddedImage);
+                    } else {
+                        return c;
+                    }
+                    return null;
+                });
         xlsxReadContext.readRowHolder(new ReadRowHolder(
                 xlsxReadSheetHolder.getRowIndex(),
                 rowType,
@@ -71,3 +85,5 @@ public class RowTagHandler extends AbstractXlsxTagHandler {
         xlsxReadSheetHolder.setCellMap(new LinkedHashMap<>());
     }
 }
+
+

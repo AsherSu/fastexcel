@@ -15,9 +15,9 @@ public class DemoData {
     @ExcelProperty("3")
     private String birthDate;
 
-    @ExcelProperty("4")
-    private String string;
-
-    @ExcelProperty(value = "5", converter = ByteArrayImageConverter.class)
+    @ExcelProperty(value = "4", converter = ByteArrayImageConverter.class)
     private byte[] pic;
+
+//    @ExcelProperty(value = "5", converter = ByteArrayImageConverter.class)
+//    private byte[] pic;
 }

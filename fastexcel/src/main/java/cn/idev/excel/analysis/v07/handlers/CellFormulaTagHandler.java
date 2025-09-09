@@ -1,12 +1,7 @@
 package cn.idev.excel.analysis.v07.handlers;
 
-import cn.idev.excel.constant.ExcelXmlConstants;
 import cn.idev.excel.context.xlsx.XlsxReadContext;
-import cn.idev.excel.enums.RowTypeEnum;
-import cn.idev.excel.metadata.Cell;
-import cn.idev.excel.read.metadata.holder.ReadRowHolder;
 import cn.idev.excel.read.metadata.holder.xlsx.XlsxReadSheetHolder;
-import cn.idev.excel.util.PositionUtils;
 import cn.idev.excel.util.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.openxml4j.opc.OPCPackage;
@@ -22,7 +17,6 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NamedNodeMap;
 
 import java.io.InputStream;
-import java.util.LinkedHashMap;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -50,22 +44,6 @@ public class CellFormulaTagHandler extends AbstractXlsxTagHandler {
     @Override
     public void startElement(XlsxReadContext xlsxReadContext, String name, Attributes attributes) {
         XlsxReadSheetHolder xlsxReadSheetHolder = xlsxReadContext.xlsxReadSheetHolder();
-        int rowIndex = PositionUtils.getRowByRowTagt(
-                attributes.getValue(ExcelXmlConstants.ATTRIBUTE_R), xlsxReadSheetHolder.getRowIndex());
-        Integer lastRowIndex = xlsxReadContext.readSheetHolder().getRowIndex();
-        while (lastRowIndex + 1 < rowIndex) {
-            xlsxReadContext.readRowHolder(new ReadRowHolder(
-                    lastRowIndex + 1,
-                    RowTypeEnum.EMPTY,
-                    xlsxReadSheetHolder.getGlobalConfiguration(),
-                    new LinkedHashMap<>()));
-            xlsxReadContext.analysisEventProcessor().endRow(xlsxReadContext);
-            xlsxReadSheetHolder.setColumnIndex(null);
-            xlsxReadSheetHolder.setCellMap(new LinkedHashMap<Integer, Cell>());
-            lastRowIndex++;
-        }
-        xlsxReadSheetHolder.setRowIndex(rowIndex);
-        // 为公式内容准备缓冲
         xlsxReadSheetHolder.setTempFormula(new StringBuilder());
     }
 
@@ -73,17 +51,11 @@ public class CellFormulaTagHandler extends AbstractXlsxTagHandler {
     public void endElement(XlsxReadContext xlsxReadContext, String name) {
         try {
             XlsxReadSheetHolder xlsxReadSheetHolder = xlsxReadContext.xlsxReadSheetHolder();
-            // 写回公式数据到单元格
-            String formulaValue = xlsxReadSheetHolder.getTempFormula() == null
-                    ? null
-                    : xlsxReadSheetHolder.getTempFormula().toString();
-            if (formulaValue != null) {
-                FormulaData formulaData = new FormulaData();
-                formulaData.setFormulaValue(formulaValue);
-                xlsxReadSheetHolder.getTempCellData().setFormulaData(formulaData);
-            }
+            FormulaData formulaData = new FormulaData();
+            formulaData.setFormulaValue(xlsxReadSheetHolder.getTempFormula().toString());
+            xlsxReadSheetHolder.getTempCellData().setFormulaData(formulaData);
 
-            DispimgInfo info = parseDispimgInfo(formulaValue);
+            DispimgInfo info = parseDispimgInfo(xlsxReadSheetHolder.getTempFormula().toString());
             if (info == null || StringUtils.isEmpty(info.imageId)) {
                 return;
             }
@@ -97,7 +69,6 @@ public class CellFormulaTagHandler extends AbstractXlsxTagHandler {
             if (picturePart != null) {
                 createPictureFromPart(xlsxReadContext, picturePart,
                         xlsxReadSheetHolder.getRowIndex(), xlsxReadSheetHolder.getColumnIndex());
-                return;
             }
 
             // 无法解析则不再回退到基于SAX的锚点路径，保持“直接查找”的策略
@@ -108,10 +79,7 @@ public class CellFormulaTagHandler extends AbstractXlsxTagHandler {
 
     @Override
     public void characters(XlsxReadContext xlsxReadContext, char[] ch, int start, int length) {
-        XlsxReadSheetHolder xlsxReadSheetHolder = xlsxReadContext.xlsxReadSheetHolder();
-        if (xlsxReadSheetHolder.getTempFormula() != null) {
-            xlsxReadSheetHolder.getTempFormula().append(ch, start, length);
-        }
+        xlsxReadContext.xlsxReadSheetHolder().getTempFormula().append(ch, start, length);
     }
 
 
@@ -384,7 +352,7 @@ public class CellFormulaTagHandler extends AbstractXlsxTagHandler {
         return new DispimgInfo(id, mode);
     }
 
-    
+
 
     /**
      * 从PackagePart创建图片CellExtra对象
