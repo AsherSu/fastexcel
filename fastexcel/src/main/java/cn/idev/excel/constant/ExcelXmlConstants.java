@@ -45,33 +45,33 @@ public class ExcelXmlConstants {
     public static final String IMAGE_TAG = "pic";
     public static final String X_IMAGE_TAG = "x:pic";
     public static final String NS2_IMAGE_TAG = "ns2:pic";
-    
+
     // 图片相关的额外标签
     public static final String DRAWING_TAG = "drawing";
     public static final String X_DRAWING_TAG = "x:drawing";
     public static final String NS2_DRAWING_TAG = "ns2:drawing";
-    
+
     public static final String TWO_CELL_ANCHOR_TAG = "twoCellAnchor";
     public static final String X_TWO_CELL_ANCHOR_TAG = "x:twoCellAnchor";
     public static final String NS2_TWO_CELL_ANCHOR_TAG = "ns2:twoCellAnchor";
-    
+
     public static final String ONE_CELL_ANCHOR_TAG = "oneCellAnchor";
     public static final String X_ONE_CELL_ANCHOR_TAG = "x:oneCellAnchor";
     public static final String NS2_ONE_CELL_ANCHOR_TAG = "ns2:oneCellAnchor";
-    
+
     public static final String BLIP_TAG = "blip";
     public static final String X_BLIP_TAG = "x:blip";
     public static final String NS2_BLIP_TAG = "ns2:blip";
     public static final String A_BLIP_TAG = "a:blip";
-    
+
     public static final String FROM_TAG = "from";
     public static final String X_FROM_TAG = "x:from";
     public static final String NS2_FROM_TAG = "ns2:from";
-    
+
     public static final String TO_TAG = "to";
     public static final String X_TO_TAG = "x:to";
     public static final String NS2_TO_TAG = "ns2:to";
-    
+
     public static final String ROW_OFF_TAG = "row";
     public static final String COL_OFF_TAG = "col";
     public static final String X_ROW_OFF_TAG = "x:row";
@@ -91,6 +91,10 @@ public class ExcelXmlConstants {
      * r attribute
      */
     public static final String ATTRIBUTE_R = "r";
+    /**
+     * SPAN attribute
+     */
+    public static final String SPAN = "spans";
     /**
      * t attribute
      */

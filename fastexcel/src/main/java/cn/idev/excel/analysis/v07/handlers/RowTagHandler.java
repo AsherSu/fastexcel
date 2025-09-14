@@ -27,6 +27,11 @@ public class RowTagHandler extends AbstractXlsxTagHandler {
         XlsxReadSheetHolder xlsxReadSheetHolder = xlsxReadContext.xlsxReadSheetHolder();
         int rowIndex = PositionUtils.getRowByRowTagt(
                 attributes.getValue(ExcelXmlConstants.ATTRIBUTE_R), xlsxReadSheetHolder.getRowIndex());
+        String value = attributes.getValue(ExcelXmlConstants.SPAN);
+        if (value!=null) {
+            String totalCol = value.split(":")[1];
+            xlsxReadSheetHolder.setTotalCol(Integer.parseInt(totalCol));
+        }
         Integer lastRowIndex = xlsxReadContext.readSheetHolder().getRowIndex();
         while (lastRowIndex + 1 < rowIndex) {
             xlsxReadContext.readRowHolder(new ReadRowHolder(
@@ -64,17 +69,18 @@ public class RowTagHandler extends AbstractXlsxTagHandler {
                 rowType = RowTypeEnum.EMPTY;
             }
         }
-        xlsxReadSheetHolder.getCellMap().values()
-                        .stream().map(c -> {
-                    if (c == null) {
-                        Map<Integer, Map<Integer, XlsxSaxAnalyser.EmbeddedImage>> imageMap = xlsxReadSheetHolder.getImageMap();
-                        XlsxSaxAnalyser.EmbeddedImage embeddedImage = imageMap.get(xlsxReadSheetHolder.getRowIndex()).get(xlsxReadSheetHolder.getColumnIndex());
-                        System.out.println(embeddedImage);
-                    } else {
-                        return c;
+        Map<Integer, Cell> cellMap = xlsxReadSheetHolder.getCellMap();
+        for (int i=0;i< (xlsxReadSheetHolder.getTotalCol()==null?0 :xlsxReadSheetHolder.getTotalCol());i++){
+            if (cellMap.get(i)==null){
+                Map<Integer, Map<Integer, XlsxSaxAnalyser.EmbeddedImage>> imageMap = xlsxReadSheetHolder.getImageMap();
+                if (imageMap!=null && imageMap.get(xlsxReadSheetHolder.getRowIndex())!=null){
+                    XlsxSaxAnalyser.EmbeddedImage embeddedImage = imageMap.get(xlsxReadSheetHolder.getRowIndex()).get(i);
+                    if (embeddedImage!=null){
+                        cellMap.put(i,new ReadCellData<>(embeddedImage.getData()));
                     }
-                    return null;
-                });
+                }
+            }
+        }
         xlsxReadContext.readRowHolder(new ReadRowHolder(
                 xlsxReadSheetHolder.getRowIndex(),
                 rowType,

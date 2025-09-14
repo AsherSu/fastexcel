@@ -1,26 +1,23 @@
 package cn.idev.excel.analysis.v07.handlers;
 
 import cn.idev.excel.context.xlsx.XlsxReadContext;
+import cn.idev.excel.enums.CellExtraTypeEnum;
+import cn.idev.excel.metadata.CellExtra;
+import cn.idev.excel.metadata.data.FormulaData;
 import cn.idev.excel.read.metadata.holder.xlsx.XlsxReadSheetHolder;
+import cn.idev.excel.util.DispimgFormulaUtil;
 import cn.idev.excel.util.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.openxml4j.opc.PackagePart;
 import org.apache.poi.openxml4j.opc.PackageRelationship;
-import org.apache.poi.openxml4j.opc.PackageRelationshipCollection;
 import org.xml.sax.Attributes;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.DocumentBuilder;
-import org.w3c.dom.Document;
-import org.w3c.dom.NodeList;
-import org.w3c.dom.Node;
-import org.w3c.dom.NamedNodeMap;
 
 import java.io.InputStream;
-import java.util.Optional;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import cn.idev.excel.metadata.data.FormulaData;
 
 /**
  * 公式单元格处理器 - 支持DISPIMG图片公式解析
@@ -28,18 +25,11 @@ import cn.idev.excel.metadata.data.FormulaData;
  */
 @Slf4j
 public class CellFormulaTagHandler extends AbstractXlsxTagHandler {
-
-    // 解析DISPIMG公式：支持可选的 '='、'@'、'_xlfn.' 前缀，分隔符支持 ',' 或 ';'，可带模式位
+    
+    // 解析DISPIMG公式的正则表达式 - 兼容WPS格式
     private static final Pattern DISPIMG_PATTERN = Pattern.compile(
-            "^(?:@)?(?:=)?(?:_xlfn\\.)?DISPIMG\\(\\s*\"([^\"]+)\"\\s*(?:[,;]\\s*(\\d+)\\s*)?\\)\\s*$",
+            "^(?:@)?(?:_xlfn\\.)?DISPIMG\\(\\s*\"([^\"]+)\"(?:\\s*,\\s*\\d+\\s*)?\\)\\s*$",
             Pattern.CASE_INSENSITIVE);
-
-    private static class DispimgInfo {
-        final String imageId; // 如 ID_XXXX
-        @SuppressWarnings("unused")
-        final Integer mode;   // 0 裁剪, 1 缩放，未知为 null
-        DispimgInfo(String imageId, Integer mode) { this.imageId = imageId; this.mode = mode; }
-    }
 
     @Override
     public void startElement(XlsxReadContext xlsxReadContext, String name, Attributes attributes) {
@@ -49,32 +39,16 @@ public class CellFormulaTagHandler extends AbstractXlsxTagHandler {
 
     @Override
     public void endElement(XlsxReadContext xlsxReadContext, String name) {
-        try {
-            XlsxReadSheetHolder xlsxReadSheetHolder = xlsxReadContext.xlsxReadSheetHolder();
-            FormulaData formulaData = new FormulaData();
-            formulaData.setFormulaValue(xlsxReadSheetHolder.getTempFormula().toString());
-            xlsxReadSheetHolder.getTempCellData().setFormulaData(formulaData);
+        XlsxReadSheetHolder xlsxReadSheetHolder = xlsxReadContext.xlsxReadSheetHolder();
+        String formulaValue = xlsxReadSheetHolder.getTempFormula().toString();
 
-            DispimgInfo info = parseDispimgInfo(xlsxReadSheetHolder.getTempFormula().toString());
-            if (info == null || StringUtils.isEmpty(info.imageId)) {
-                return;
-            }
+        FormulaData formulaData = new FormulaData();
+        formulaData.setFormulaValue(formulaValue);
+        xlsxReadSheetHolder.getTempCellData().setFormulaData(formulaData);
+        // 不再调用setByteArrayValue()方法，因为该方法需要参数
 
-            // 第一步：ID -> rId（来自 xl/cellimages.xml）
-            PackagePart picturePart = resolvePicturePartByImageId(xlsxReadContext, info.imageId);
-            if (picturePart == null) {
-                // 兼容：有些文件直接在公式里就是 rId，尝试按 rId 查找
-                picturePart = resolvePicturePartByRid(xlsxReadContext, info.imageId);
-            }
-            if (picturePart != null) {
-                createPictureFromPart(xlsxReadContext, picturePart,
-                        xlsxReadSheetHolder.getRowIndex(), xlsxReadSheetHolder.getColumnIndex());
-            }
-
-            // 无法解析则不再回退到基于SAX的锚点路径，保持“直接查找”的策略
-        } catch (Exception e) {
-            log.info("结束图片元素处理时发生错误: name={}, error={}", name, e.getMessage());
-        }
+        // 检查是否为DISPIMG公式并处理图片
+        processDispimgFormulaIfNeeded(xlsxReadContext, formulaValue);
     }
 
     @Override
@@ -82,303 +56,160 @@ public class CellFormulaTagHandler extends AbstractXlsxTagHandler {
         xlsxReadContext.xlsxReadSheetHolder().getTempFormula().append(ch, start, length);
     }
 
-
     /**
-     * 从锚点信息创建图片对象
+     * 如需要，处理DISPIMG公式图片
      */
-    @SuppressWarnings("unused")
-    private void createPictureFromAnchor(XlsxReadContext xlsxReadContext, String rId, int row, int col) {
-        PackageRelationshipCollection packageRelationshipCollection =
-                xlsxReadContext.xlsxReadSheetHolder().getPackageRelationshipCollection();
-        if (packageRelationshipCollection == null) {
-            return;
-        }
-
-        Optional.ofNullable(packageRelationshipCollection.getRelationshipByID(rId))
-                .ifPresent(relationship -> {
-                    try {
-                        PackagePart picturePart = xlsxReadContext.xlsxReadSheetHolder()
-                                .getPackagePart().getRelatedPart(relationship);
-
-                        if (picturePart != null) {
-                            createPictureFromPart(xlsxReadContext, picturePart, row, col);
-                        }
-                    } catch (Exception e) {
-                        log.warn("从锚点创建图片时发生错误: rId={}, row={}, col={}, error={}", rId, row, col, e.getMessage());
-                    }
-                });
-    }
-
-    /**
-     * 在整个OPCPackage范围内，通过rId直接定位图片PackagePart（不进行SAX解析）
-     */
-    private PackagePart resolvePicturePartByRid(XlsxReadContext xlsxReadContext, String rId) {
-        if (StringUtils.isEmpty(rId)) {
-            return null;
-        }
-        OPCPackage opcPackage = xlsxReadContext.xlsxReadWorkbookHolder().getOpcPackage();
-        if (opcPackage == null) {
-            return null;
-        }
-        try {
-            for (PackagePart part : opcPackage.getParts()) {
-                // 跳过关系部件，避免对其调用 getRelationships 抛出异常
-                try {
-                    if (part.isRelationshipPart()) {
-                        continue;
-                    }
-                } catch (Exception ignored) {
-                    // 防御性判断，少数实现可能不支持该检测
-                }
-                PackageRelationshipCollection rels = part.getRelationships();
-                if (rels == null) {
-                    continue;
-                }
-                PackageRelationship relationship = rels.getRelationshipByID(rId);
-                if (relationship == null) {
-                    continue;
-                }
-                try {
-                    PackagePart pic = part.getRelatedPart(relationship);
-                    if (pic != null) {
-                        // 简单判定：内容类型包含图片或路径位于 /xl/media/
-                        String contentType = pic.getContentType();
-                        String name = pic.getPartName() != null ? pic.getPartName().getName() : "";
-                        if ((contentType != null && contentType.toLowerCase().contains("image/"))
-                                || name.contains("/xl/media/")) {
-                            return pic;
-                        }
-                    }
-                } catch (Exception ignored) {
-                    // 略过单个关系错误，继续查找
-                }
-            }
-        } catch (Exception e) {
-            log.debug("OPCPackage按rId查找图片失败: rId={}, error={}", rId, e.getMessage());
-        }
-        return null;
-    }
-
-    /**
-     * 根据图片ID（如 ID_XXXX）解析到图片 PackagePart：
-     * 1) 在 /xl/cellimages.xml 中查找 name="ID_XXXX"，取 r:embed/rId
-     * 2) 通过 cellimages.xml 的 relationships 查到实际图片部件
-     */
-    private PackagePart resolvePicturePartByImageId(XlsxReadContext xlsxReadContext, String imageId) {
-        if (StringUtils.isEmpty(imageId)) {
-            return null;
-        }
-        OPCPackage opcPackage = xlsxReadContext.xlsxReadWorkbookHolder().getOpcPackage();
-        if (opcPackage == null) {
-            return null;
-        }
-        try {
-            PackagePart cellImagesPart = null;
-            for (PackagePart part : opcPackage.getParts()) {
-                try {
-                    if (part.isRelationshipPart()) {
-                        continue;
-                    }
-                } catch (Exception ignored) {
-                }
-                String name = part.getPartName() != null ? part.getPartName().getName() : "";
-                if (name.endsWith("/cellimages.xml") || name.equals("/xl/cellimages.xml") || name.equals("xl/cellimages.xml")) {
-                    cellImagesPart = part;
-                    break;
-                }
-            }
-            if (cellImagesPart == null) {
-                return null;
-            }
-
-            // 解析 cellimages.xml，找到指定 name 的条目，并读取其 r:embed/rId
-            String embedRid = extractEmbedRidFromCellImages(cellImagesPart, imageId);
-            if (StringUtils.isEmpty(embedRid)) {
-                return null;
-            }
-
-            PackageRelationshipCollection rels = cellImagesPart.getRelationships();
-            if (rels == null) {
-                return null;
-            }
-            PackageRelationship relationship = rels.getRelationshipByID(embedRid);
-            if (relationship == null) {
-                return null;
-            }
+    private void processDispimgFormulaIfNeeded(XlsxReadContext xlsxReadContext, String formula) {
+        if (isDispimgFormula(formula)) {
             try {
-                return cellImagesPart.getRelatedPart(relationship);
-            } catch (Exception e) {
-                log.debug("通过 cellimages.xml 的关系解析图片失败: id={}, rId={}, error={}", imageId, embedRid, e.getMessage());
-                return null;
-            }
-        } catch (Exception e) {
-            log.debug("解析图片ID映射失败: imageId={}, error={}", imageId, e.getMessage());
-            return null;
-        }
-    }
-
-    private String extractEmbedRidFromCellImages(PackagePart cellImagesPart, String imageId) {
-        try (InputStream is = cellImagesPart.getInputStream()) {
-            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-            dbf.setNamespaceAware(true);
-            DocumentBuilder db = dbf.newDocumentBuilder();
-            Document doc = db.parse(is);
-
-            // 遍历全部元素，定位 xdr:cNvPr[name=ID_xxx]
-            NodeList all = doc.getElementsByTagName("*");
-            for (int i = 0; i < all.getLength(); i++) {
-                Node node = all.item(i);
-                if (!"cNvPr".equalsIgnoreCase(localName(node))) {
-                    continue;
-                }
-                NamedNodeMap attrs = node.getAttributes();
-                if (attrs == null || attrs.getLength() == 0) {
-                    continue;
-                }
-                String nameAttr = getAttr(attrs, "name");
-                if (nameAttr == null || !imageId.equals(nameAttr)) {
-                    continue;
-                }
-                // 找到父系的 xdr:pic，再在其子树中查找 a:blip，取 r:embed
-                Node pic = findAncestorByLocalName(node, "pic");
-                if (pic == null) {
-                    continue;
-                }
-                Node blip = findDescendantByLocalName(pic, "blip");
-                if (blip == null) {
-                    continue;
-                }
-                NamedNodeMap blipAttrs = blip.getAttributes();
-                if (blipAttrs == null) {
-                    continue;
-                }
-                String embed = getAttr(blipAttrs, "r:embed");
-                if (embed == null) {
-                    embed = getAttrEndsWith(blipAttrs, ":embed");
-                    if (embed == null) {
-                        embed = getAttr(blipAttrs, "embed");
+                // 获取当前单元格的行列信息
+                XlsxReadSheetHolder sheetHolder = xlsxReadContext.xlsxReadSheetHolder();
+                Integer rowIndex = xlsxReadContext.readSheetHolder().getRowIndex();
+                Integer columnIndex = sheetHolder.getColumnIndex();
+                
+                // 解析DISPIMG公式中的图片ID
+                String imageId = parseDispimgId(formula);
+                if (!StringUtils.isEmpty(imageId)) {
+                    // 处理DISPIMG图片
+                    boolean processed = processDispimgPicture(xlsxReadContext, imageId, rowIndex, columnIndex);
+                    
+                    if (processed) {
+                        log.debug("成功处理DISPIMG公式: row={}, col={}, formula={}",
+                                rowIndex, columnIndex, formula);
                     }
                 }
-                if (!StringUtils.isEmpty(embed)) {
-                    return embed;
-                }
-            }
-        } catch (Exception e) {
-            log.debug("解析 cellimages.xml 失败: error={}", e.getMessage());
-        }
-        return null;
-    }
 
-    private String localName(Node node) {
-        if (node == null) {
-            return null;
-        }
-        String ln = node.getLocalName();
-        if (ln != null) {
-            return ln;
-        }
-        String nm = node.getNodeName();
-        if (nm == null) {
-            return null;
-        }
-        int idx = nm.indexOf(':');
-        return idx >= 0 ? nm.substring(idx + 1) : nm;
-    }
-
-    private Node findAncestorByLocalName(Node node, String targetLocalName) {
-        Node p = node;
-        while (p != null) {
-            if (targetLocalName.equalsIgnoreCase(localName(p))) {
-                return p;
-            }
-            p = p.getParentNode();
-        }
-        return null;
-    }
-
-    private Node findDescendantByLocalName(Node node, String targetLocalName) {
-        if (node == null) {
-            return null;
-        }
-        NodeList children = node.getChildNodes();
-        for (int i = 0; i < children.getLength(); i++) {
-            Node c = children.item(i);
-            if (targetLocalName.equalsIgnoreCase(localName(c))) {
-                return c;
-            }
-            Node hit = findDescendantByLocalName(c, targetLocalName);
-            if (hit != null) {
-                return hit;
+            } catch (Exception e) {
+                log.warn("处理DISPIMG公式时发生错误: formula={}, error={}", formula, e.getMessage());
             }
         }
-        return null;
     }
-
-    private String getAttr(NamedNodeMap attrs, String key) {
-        Node n = attrs.getNamedItem(key);
-        return n == null ? null : n.getNodeValue();
-    }
-
-    private String getAttrEndsWith(NamedNodeMap attrs, String suffix) {
-        for (int i = 0; i < attrs.getLength(); i++) {
-            Node a = attrs.item(i);
-            if (a != null) {
-                String nm = a.getNodeName();
-                if (nm != null && nm.endsWith(suffix)) {
-                    return a.getNodeValue();
-                }
-            }
-        }
-        return null;
-    }
-
-    private DispimgInfo parseDispimgInfo(String formula) {
+    
+    /**
+     * 解析DISPIMG公式中的图片ID
+     */
+    private String parseDispimgId(String formula) {
         if (StringUtils.isEmpty(formula)) {
             return null;
         }
-        Matcher m = DISPIMG_PATTERN.matcher(formula.trim());
-        if (!m.matches()) {
-            return null;
-        }
-        String id = m.group(1);
-        Integer mode = null;
-        try {
-            String g2 = m.group(2);
-            if (!StringUtils.isEmpty(g2)) {
-                mode = Integer.parseInt(g2);
-            }
-        } catch (Exception ignore) {
-        }
-        return new DispimgInfo(id, mode);
+
+        Matcher matcher = DISPIMG_PATTERN.matcher(formula.trim());
+        return matcher.matches() ? matcher.group(1) : null;
     }
 
-
-
     /**
-     * 从PackagePart创建图片CellExtra对象
+     * 检查公式是否是DISPIMG类型
      */
-    private void createPictureFromPart(XlsxReadContext xlsxReadContext, PackagePart picturePart,
-                                       Integer rowIndex, Integer columnIndex) {
-        try (InputStream inputStream = picturePart.getInputStream()) {
-            byte[] pictureData = readInputStreamToByteArray(inputStream);
-            String pictureFormat = determinePictureFormat(picturePart.getContentType(),
-                    picturePart.getPartName().getName());
+    private boolean isDispimgFormula(String formula) {
+        return !StringUtils.isEmpty(parseDispimgId(formula));
+    }
+    
+    /**
+     * 处理DISPIMG图片
+     */
+    private boolean processDispimgPicture(XlsxReadContext xlsxReadContext, String imageId, 
+                                         Integer rowIndex, Integer columnIndex) {
+        if (!xlsxReadContext.readWorkbookHolder().getExtraReadSet().contains(CellExtraTypeEnum.MERGE_IMAGE)) {
+            return false;
+        }
 
-            // 使用有效的行列索引，如果未提供则使用0
+        try {
+            OPCPackage pkg = xlsxReadContext.xlsxReadWorkbookHolder().getOpcPackage();
+            Map<String, PackagePart> id2ImagePart = buildImageIdMapping(pkg);
+
+            PackagePart imagePart = id2ImagePart.get(imageId);
+            if (imagePart != null) {
+                createCellExtraFromDispimgImage(xlsxReadContext, imagePart, imageId, rowIndex, columnIndex);
+                return true;
+            }
+        } catch (Exception e) {
+            log.warn("处理DISPIMG图片时发生异常: imageId={}, error={}", imageId, e.getMessage());
+        }
+
+        return false;
+    }
+    
+    /**
+     * 构建图片ID到PackagePart的映射
+     */
+    private Map<String, PackagePart> buildImageIdMapping(OPCPackage pkg) {
+        Map<String, PackagePart> id2ImagePart = new HashMap<>();
+
+        try {
+            // 查找所有cellimages*.xml Part
+            for (PackagePart part : pkg.getParts()) {
+                String partName = part.getPartName().getName().toLowerCase();
+                if (partName.contains("cellimages") && partName.endsWith(".xml")) {
+                    parseCellImagesForDispimg(part, id2ImagePart);
+                }
+            }
+
+        } catch (Exception e) {
+            log.warn("构建图片映射时发生异常: {}", e.getMessage());
+        }
+
+        return id2ImagePart;
+    }
+    
+    /**
+     * 解析CellImages XML文件以构建DISPIMG映射
+     */
+    private void parseCellImagesForDispimg(PackagePart cellImagesPart, Map<String, PackagePart> id2ImagePart) {
+        try {
+            // 首先建立该Part的rId到图片Part的映射
+            Map<String, PackagePart> rid2ImagePart = new HashMap<>();
+            for (PackageRelationship rel : cellImagesPart.getRelationships()) {
+                String relType = rel.getRelationshipType();
+                if (relType != null && relType.toLowerCase().endsWith("/image")) {
+                    PackagePart imagePart = cellImagesPart.getRelatedPart(rel);
+                    if (imagePart != null) {
+                        rid2ImagePart.put(rel.getId(), imagePart);
+                    }
+                }
+            }
+
+            if (rid2ImagePart.isEmpty()) {
+                return;
+            }
+            
+            // TODO: 实现XML解析以找到name="ID_xxx"和r:embed的对应关系
+            // 这里可以添加完整的XML解析逻辑来处理cellImages.xml文件
+            
+        } catch (Exception e) {
+            log.warn("解析CellImages文件时发生异常: {}", e.getMessage());
+        }
+    }
+    
+    /**
+     * 从DISPIMG图片创建CellExtra
+     */
+    private void createCellExtraFromDispimgImage(XlsxReadContext xlsxReadContext, PackagePart imagePart,
+                                                String imageId, Integer rowIndex, Integer columnIndex) {
+        try (InputStream inputStream = imagePart.getInputStream()) {
+            byte[] pictureData = readInputStreamToByteArray(inputStream);
+            String pictureFormat = determinePictureFormat(imagePart.getContentType(),
+                    imagePart.getPartName().getName());
+
+            // 使用提供的行列索引，如果为null则使用0
             int finalRowIndex = rowIndex != null ? rowIndex : 0;
             int finalColumnIndex = columnIndex != null ? columnIndex : 0;
 
-            XlsxReadSheetHolder xlsxReadSheetHolder = xlsxReadContext.xlsxReadSheetHolder();
-            xlsxReadSheetHolder.getTempCellData().setByteArrayValue(pictureData);
+            CellExtra cellExtra = new CellExtra(
+                    CellExtraTypeEnum.MERGE_IMAGE,
+                    pictureData,
+                    pictureFormat,
+                    finalRowIndex,
+                    finalColumnIndex
+            );
 
-            log.debug("成功解析图片: row={}, col={}, format={}, size={}bytes",
-                    finalRowIndex, finalColumnIndex, pictureFormat, pictureData.length);
+            xlsxReadContext.readSheetHolder().setCellExtra(cellExtra);
+            xlsxReadContext.analysisEventProcessor().extra(xlsxReadContext);
 
         } catch (Exception e) {
-            log.warn("从PackagePart创建图片时发生错误: {}", e.getMessage());
+            log.warn("从DISPIMG图片创建CellExtra时发生异常: {}", e.getMessage());
         }
     }
-
+    
     private static byte[] readInputStreamToByteArray(InputStream inputStream) throws Exception {
         java.io.ByteArrayOutputStream buffer = new java.io.ByteArrayOutputStream();
         byte[] data = new byte[1024];
@@ -388,20 +219,7 @@ public class CellFormulaTagHandler extends AbstractXlsxTagHandler {
         }
         return buffer.toByteArray();
     }
-
-
-    /**
-     * 解析DISPIMG公式中的图片ID
-     */
-    public static String parseDispimgId(String formula) {
-        if (StringUtils.isEmpty(formula)) {
-            return null;
-        }
-
-        Matcher matcher = DISPIMG_PATTERN.matcher(formula.trim());
-        return matcher.matches() ? matcher.group(1) : null;
-    }
-
+    
     /**
      * 判断图片格式
      */
@@ -416,7 +234,6 @@ public class CellFormulaTagHandler extends AbstractXlsxTagHandler {
             if (ct.contains("webp")) return "webp";
         }
 
-        // 从文件名推断格式
         if (!StringUtils.isEmpty(partName)) {
             int dotIndex = partName.lastIndexOf('.');
             if (dotIndex > 0 && dotIndex < partName.length() - 1) {
@@ -426,8 +243,4 @@ public class CellFormulaTagHandler extends AbstractXlsxTagHandler {
 
         return "bin";
     }
-
-
-
-
 }

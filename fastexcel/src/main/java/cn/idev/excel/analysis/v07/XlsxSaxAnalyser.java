@@ -30,6 +30,8 @@ import java.util.UUID;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
+
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.openxml4j.opc.*;
@@ -39,10 +41,7 @@ import org.apache.poi.xssf.model.Comments;
 import org.apache.poi.xssf.model.CommentsTable;
 import org.apache.poi.xssf.usermodel.XSSFComment;
 import org.apache.xmlbeans.XmlException;
-import org.openxmlformats.schemas.drawingml.x2006.spreadsheetDrawing.CTMarker;
-import org.openxmlformats.schemas.drawingml.x2006.spreadsheetDrawing.CTOneCellAnchor;
-import org.openxmlformats.schemas.drawingml.x2006.spreadsheetDrawing.CTPicture;
-import org.openxmlformats.schemas.drawingml.x2006.spreadsheetDrawing.CTTwoCellAnchor;
+import org.openxmlformats.schemas.drawingml.x2006.spreadsheetDrawing.*;
 import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTSheet;
 import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTWorkbook;
 import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTWorkbookPr;
@@ -52,6 +51,12 @@ import org.xml.sax.ContentHandler;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import org.w3c.dom.Document;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 /**
  *
@@ -343,6 +348,7 @@ public class XlsxSaxAnalyser implements ExcelReadExecutor {
     private static final String REL_DRAWING = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing";
     private static final String REL_IMAGE   = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image";
 
+    @Data
     public static class EmbeddedImage {
         public final String rId;
         public final String contentType;
@@ -364,28 +370,26 @@ public class XlsxSaxAnalyser implements ExcelReadExecutor {
     /**
      * 通过 Sheet 的 PackagePart 提取所有内嵌图片（含起始单元格位置）
      */
-    public static List<EmbeddedImage> extractEmbeddedImagesFromSheetPart(org.apache.poi.openxml4j.opc.PackagePart sheetPart)
-            throws java.io.IOException, org.apache.poi.openxml4j.exceptions.InvalidFormatException, org.apache.xmlbeans.XmlException {
-        List<EmbeddedImage> result = new java.util.ArrayList<>();
+    public static List<EmbeddedImage> extractEmbeddedImagesFromSheetPart(PackagePart sheetPart)
+            throws IOException, InvalidFormatException, XmlException {
+        List<EmbeddedImage> result = new ArrayList<>();
         if (sheetPart == null) return result;
 
-        org.apache.poi.openxml4j.opc.PackageRelationshipCollection drawings =
-                sheetPart.getRelationshipsByType(REL_DRAWING);
+        PackageRelationshipCollection drawings = sheetPart.getRelationshipsByType(REL_DRAWING);
         if (drawings == null) return result;
 
-        for (org.apache.poi.openxml4j.opc.PackageRelationship drRel : drawings) {
-            org.apache.poi.openxml4j.opc.PackagePart drawingPart = sheetPart.getRelatedPart(drRel);
+        for (PackageRelationship drRel : drawings) {
+            PackagePart drawingPart = sheetPart.getRelatedPart(drRel);
 
             // 解析 drawing.xml，建立 rId -> 单元格位置 的映射
-            java.util.Map<String, org.apache.poi.ss.util.CellAddress> posMap = parseDrawingAnchors(drawingPart);
+            Map<String, CellAddress> posMap = parseDrawingAnchors(drawingPart);
 
             // 遍历图片关系并读取二进制
-            org.apache.poi.openxml4j.opc.PackageRelationshipCollection images =
-                    drawingPart.getRelationshipsByType(REL_IMAGE);
+            PackageRelationshipCollection images = drawingPart.getRelationshipsByType(REL_IMAGE);
             if (images == null) continue;
 
-            for (org.apache.poi.openxml4j.opc.PackageRelationship imgRel : images) {
-                org.apache.poi.openxml4j.opc.PackagePart imgPart = drawingPart.getRelatedPart(imgRel);
+            for (PackageRelationship imgRel : images) {
+                PackagePart imgPart = drawingPart.getRelatedPart(imgRel);
                 byte[] bytes;
                 try (java.io.InputStream is = imgPart.getInputStream()) {
                     bytes = org.apache.poi.util.IOUtils.toByteArray(is);
@@ -406,15 +410,13 @@ public class XlsxSaxAnalyser implements ExcelReadExecutor {
     /**
      * 解析 \`drawing.xml\`，提取图片 rId 对应的锚点起始单元格（row、col）
      */
-    private static java.util.Map<String, org.apache.poi.ss.util.CellAddress> parseDrawingAnchors(
-            org.apache.poi.openxml4j.opc.PackagePart drawingPart)
-            throws java.io.IOException, org.apache.xmlbeans.XmlException {
-        java.util.Map<String, org.apache.poi.ss.util.CellAddress> map = new java.util.HashMap<>();
+    private static Map<String, CellAddress> parseDrawingAnchors(PackagePart drawingPart)
+            throws IOException, XmlException {
+        Map<String, CellAddress> map = new java.util.HashMap<>();
         if (drawingPart == null) return map;
 
-        try (java.io.InputStream is = drawingPart.getInputStream()) {
-            org.openxmlformats.schemas.drawingml.x2006.spreadsheetDrawing.CTDrawing ct =
-                    org.openxmlformats.schemas.drawingml.x2006.spreadsheetDrawing.CTDrawing.Factory.parse(is);
+        try (InputStream is = drawingPart.getInputStream()) {
+            CTDrawing ct = CTDrawing.Factory.parse(is);
 
             // twoCellAnchor// todo 解析不了
             for (CTTwoCellAnchor a : ct.getTwoCellAnchorList()) {
@@ -439,7 +441,122 @@ public class XlsxSaxAnalyser implements ExcelReadExecutor {
                 }
             }
         }
+
+        // DOM 回退解析：处理部分文件中图片位于复杂结构（如组内、不同命名空间）导致 XMLBeans 获取失败的情况
+        // 仅解析 twoCellAnchor/oneCellAnchor，absoluteAnchor 无法直接换算单元格，跳过
+        try (InputStream is2 = drawingPart.getInputStream()) {
+            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+            dbf.setNamespaceAware(true);
+            DocumentBuilder db = dbf.newDocumentBuilder();
+            Document doc = db.parse(is2);
+
+            addAnchorsFromDom(doc, "twoCellAnchor", map);
+            addAnchorsFromDom(doc, "oneCellAnchor", map);
+            // 不处理 absoluteAnchor
+        } catch (Exception ignore) {
+        }
         return map;
+    }
+
+    private static void addAnchorsFromDom(Document doc, String anchorLocalName, Map<String, CellAddress> map) {
+        NodeList anchors = doc.getElementsByTagNameNS("*", anchorLocalName);
+        for (int i = 0; i < anchors.getLength(); i++) {
+            Node anchor = anchors.item(i);
+
+            Node from = findFirstChildByLocalName(anchor, "from");
+            if (from == null) continue;
+
+            Integer row = parseInt(textOfFirstChildLocalName(from, "row"));
+            Integer col = parseInt(textOfFirstChildLocalName(from, "col"));
+            if (row == null || col == null) continue;
+
+            Node blip = findFirstDescendantByLocalName(anchor, "blip");
+            if (blip == null) continue;
+
+            String rId = getAttribute(blip, "r:embed");
+            if (rId == null) rId = getAttributeEndsWith(blip, ":embed");
+            if (rId == null) rId = getAttribute(blip, "embed");
+            if (rId == null) continue;
+
+            // 若前面已解析到同一 rId，则不覆盖
+            map.putIfAbsent(rId, new CellAddress(row, col));
+        }
+    }
+
+    private static Node findFirstChildByLocalName(Node node, String local) {
+        if (node == null) return null;
+        NodeList children = node.getChildNodes();
+        for (int i = 0; i < children.getLength(); i++) {
+            Node c = children.item(i);
+            String ln = c.getLocalName();
+            if (ln == null) {
+                String nm = c.getNodeName();
+                if (nm != null) {
+                    int idx = nm.indexOf(':');
+                    ln = idx >= 0 ? nm.substring(idx + 1) : nm;
+                }
+            }
+            if (local.equalsIgnoreCase(ln)) return c;
+        }
+        return null;
+    }
+
+    private static Node findFirstDescendantByLocalName(Node node, String local) {
+        if (node == null) return null;
+        NodeList children = node.getChildNodes();
+        for (int i = 0; i < children.getLength(); i++) {
+            Node c = children.item(i);
+            String ln = c.getLocalName();
+            if (ln == null) {
+                String nm = c.getNodeName();
+                if (nm != null) {
+                    int idx = nm.indexOf(':');
+                    ln = idx >= 0 ? nm.substring(idx + 1) : nm;
+                }
+            }
+            if (local.equalsIgnoreCase(ln)) return c;
+            Node deeper = findFirstDescendantByLocalName(c, local);
+            if (deeper != null) return deeper;
+        }
+        return null;
+    }
+
+    private static String textOfFirstChildLocalName(Node node, String local) {
+        Node child = findFirstChildByLocalName(node, local);
+        if (child == null) return null;
+        String text = child.getTextContent();
+        if (text == null) return null;
+        text = text.trim();
+        return text.isEmpty() ? null : text;
+    }
+
+    private static Integer parseInt(String s) {
+        if (s == null) return null;
+        try { return Integer.parseInt(s); } catch (NumberFormatException e) { return null; }
+    }
+
+    private static String getAttribute(Node node, String key) {
+        if (node == null) return null;
+        NamedNodeMap attrs = node.getAttributes();
+        if (attrs == null) return null;
+        Node a = attrs.getNamedItem(key);
+        return a == null ? null : a.getNodeValue();
+    }
+
+    private static String getAttributeEndsWith(Node node, String suffix) {
+        if (node == null) return null;
+        NamedNodeMap attrs = node.getAttributes();
+        if (attrs == null) return null;
+        for (int i = 0; i < attrs.getLength(); i++) {
+            Node a = attrs.item(i);
+            if (a != null) {
+                String nm = a.getNodeName();
+                if (nm != null && nm.endsWith(suffix)) {
+                    return a.getNodeValue();
+                }
+            }
+        }
+        return null;
     }
 
     /**
@@ -462,7 +579,7 @@ public class XlsxSaxAnalyser implements ExcelReadExecutor {
         return imageMap;
     }
 
-    private static String fileNameOfPart(org.apache.poi.openxml4j.opc.PackagePart part) {
+    private static String fileNameOfPart(PackagePart part) {
         String path = part.getPartName().getName(); // 形如 /xl/media/image1.png
         int idx = path.lastIndexOf('/');
         return idx >= 0 ? path.substring(idx + 1) : path;

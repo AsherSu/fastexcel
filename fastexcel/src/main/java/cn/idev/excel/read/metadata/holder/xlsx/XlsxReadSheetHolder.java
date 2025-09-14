@@ -35,6 +35,7 @@ public class XlsxReadSheetHolder extends ReadSheetHolder {
      * Current Column
      */
     private Integer columnIndex;
+    private Integer totalCol;
     /**
      * Data for current label.
      */

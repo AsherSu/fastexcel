@@ -33,9 +33,6 @@ public class ByteArrayImageConverter implements Converter<byte[]> {
     @Override
     public byte[] convertToJavaData(
             ReadCellData<?> cellData, ExcelContentProperty contentProperty, GlobalConfiguration globalConfiguration) {
-        if (CellDataTypeEnum.STRING.equals(cellData.getType())) {
-            return cellData.getByteArrayValue();
-        }
-        return null;
+        return (byte[]) cellData.getData();
     }
 }
